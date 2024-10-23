@@ -1,7 +1,10 @@
-﻿using EpiTrello.Infrastructure.Data;
+﻿using System.Text;
+using EpiTrello.Infrastructure.Data;
 using EpiTrello.Infrastructure.Factories;
 using EpiTrello.Infrastructure.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 namespace EpiTrello.API;
 
@@ -18,10 +21,33 @@ public class Startup
     {
         services.AddDbContext<EpiTrelloContext>(options =>
             options.UseNpgsql(Configuration.GetConnectionString("DefaultConnection")));
+        
+        var jwtSettings = Configuration.GetSection("JwtSettings");
+        var secretKey = Encoding.UTF8.GetBytes(jwtSettings["Secret"]);
+
+        services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuer = jwtSettings["Issuer"],
+                    ValidAudience = jwtSettings["Audience"],
+                    IssuerSigningKey = new SymmetricSecurityKey(secretKey)
+                };
+            });
 
         services.AddScoped<DaoFactory>();
+        services.AddScoped<UserService>();
         services.AddScoped<BoardService>();
-
+        
         services.AddControllers();
     }
 

@@ -1,4 +1,5 @@
-﻿using EpiTrello.Core.Interfaces;
+﻿using System.Linq.Expressions;
+using EpiTrello.Core.Interfaces;
 using EpiTrello.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -18,6 +19,11 @@ public class GenericDao<T> : IGenericDao<T> where T : class
     public async Task<T?> GetByIdAsync(int id)
     {
         return await _dbSet.FindAsync(id);
+    }
+
+    public async Task<T?> GetByPredicateAsync(Expression<Func<T, bool>> predicate)
+    {
+        return await _dbSet.FirstOrDefaultAsync(predicate);
     }
 
     public async Task<IEnumerable<T>> GetAllAsync()

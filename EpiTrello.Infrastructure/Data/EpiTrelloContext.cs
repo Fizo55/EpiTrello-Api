@@ -7,6 +7,8 @@ using Microsoft.EntityFrameworkCore;
 public class EpiTrelloContext : DbContext
 {
     public DbSet<Board> Boards { get; set; }
+    
+    public DbSet<User> Users { get; set; }
 
     public EpiTrelloContext(DbContextOptions<EpiTrelloContext> options) : base(options)
     {
@@ -15,6 +17,10 @@ public class EpiTrelloContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Board>()
+            .HasIndex(u => u.Id)
+            .IsUnique();
+
+        modelBuilder.Entity<User>()
             .HasIndex(u => u.Id)
             .IsUnique();
     }

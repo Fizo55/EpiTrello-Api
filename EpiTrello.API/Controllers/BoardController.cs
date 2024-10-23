@@ -1,11 +1,13 @@
 ﻿using EpiTrello.Core.Models;
 using EpiTrello.Infrastructure.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EpiTrello.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class BoardController : ControllerBase
 {
     private readonly BoardService _boardService;
@@ -15,7 +17,7 @@ public class BoardController : ControllerBase
         _boardService = boardService;
     }
 
-    // GET: api/board
+    // GET: /board
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Board>>> GetBoards()
     {
@@ -23,7 +25,7 @@ public class BoardController : ControllerBase
         return Ok(boards);
     }
 
-    // GET: api/board/{id}
+    // GET: /board/{id}
     [HttpGet("{id}")]
     public async Task<ActionResult<Board>> GetBoard(int id)
     {
@@ -36,7 +38,7 @@ public class BoardController : ControllerBase
         return Ok(board);
     }
 
-    // POST: api/board
+    // POST: /board
     [HttpPost]
     public async Task<ActionResult<Board>> CreateBoard([FromBody] Board board)
     {
@@ -49,7 +51,7 @@ public class BoardController : ControllerBase
         return CreatedAtAction(nameof(GetBoard), new { id = board.Id }, board);
     }
 
-    // PUT: api/board/{id}
+    // PUT: /board/{id}
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateBoard(int id, [FromBody] Board board)
     {
@@ -73,7 +75,7 @@ public class BoardController : ControllerBase
         return NoContent();
     }
 
-    // DELETE: api/board/{id}
+    // DELETE: /board/{id}
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteBoard(int id)
     {
