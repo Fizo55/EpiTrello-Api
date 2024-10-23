@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace EpiTrello.API.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("[controller]")]
 [Authorize]
 public class BoardController : ControllerBase
 {

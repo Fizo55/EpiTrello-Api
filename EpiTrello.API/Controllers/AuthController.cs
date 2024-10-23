@@ -10,7 +10,7 @@ using Microsoft.IdentityModel.Tokens;
 namespace EpiTrello.API.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("[controller]")]
 public class AuthController : ControllerBase
 {
     private readonly UserService _userService;
