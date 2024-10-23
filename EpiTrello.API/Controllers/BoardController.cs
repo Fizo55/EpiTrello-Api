@@ -2,7 +2,7 @@
 using EpiTrello.Infrastructure.Services;
 using Microsoft.AspNetCore.Mvc;
 
-namespace EpiTrello.API;
+namespace EpiTrello.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
