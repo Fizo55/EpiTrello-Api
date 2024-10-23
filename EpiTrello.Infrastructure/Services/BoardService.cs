@@ -1,15 +1,16 @@
 ﻿using EpiTrello.Core.Interfaces;
 using EpiTrello.Core.Models;
+using EpiTrello.Infrastructure.Factories;
 
-namespace EpiTrello.Core.Services;
+namespace EpiTrello.Infrastructure.Services;
 
 public class BoardService
 {
     private readonly IGenericDao<Board> _boardDao;
 
-    public BoardService(IGenericDao<Board> boardDao)
+    public BoardService(DaoFactory daoFactory)
     {
-        _boardDao = boardDao;
+        _boardDao = daoFactory.CreateDao<Board>();
     }
 
     public async Task<Board?> GetBoardAsync(int id)
