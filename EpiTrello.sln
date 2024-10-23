@@ -1,6 +1,10 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EpiTrello", "EpiTrello\EpiTrello.csproj", "{29FE11FD-272C-49B4-8D90-BD21F605A8E8}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EpiTrello.API", "EpiTrello.API\EpiTrello.API.csproj", "{29FE11FD-272C-49B4-8D90-BD21F605A8E8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EpiTrello.Core", "EpiTrello.Core\EpiTrello.Core.csproj", "{FE377F5C-E764-41C0-B4E3-F149576332B1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EpiTrello.Infrastructure", "EpiTrello.Infrastructure\EpiTrello.Infrastructure.csproj", "{48AF3B00-7FBE-400A-AC5E-34912FD77B7B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -12,5 +16,13 @@ Global
 		{29FE11FD-272C-49B4-8D90-BD21F605A8E8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{29FE11FD-272C-49B4-8D90-BD21F605A8E8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{29FE11FD-272C-49B4-8D90-BD21F605A8E8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FE377F5C-E764-41C0-B4E3-F149576332B1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FE377F5C-E764-41C0-B4E3-F149576332B1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FE377F5C-E764-41C0-B4E3-F149576332B1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FE377F5C-E764-41C0-B4E3-F149576332B1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{48AF3B00-7FBE-400A-AC5E-34912FD77B7B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{48AF3B00-7FBE-400A-AC5E-34912FD77B7B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{48AF3B00-7FBE-400A-AC5E-34912FD77B7B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{48AF3B00-7FBE-400A-AC5E-34912FD77B7B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

@@ -4,6 +4,11 @@
         <TargetFramework>net8.0</TargetFramework>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
+        <AssemblyName>EpiTrello.API</AssemblyName>
+        <RootNamespace>EpiTrello.API</RootNamespace>
+        <PackageId>EpiTrello.API</PackageId>
+        <Company>EpiTrello.API</Company>
+        <Product>EpiTrello.API</Product>
     </PropertyGroup>
 
     <ItemGroup>
