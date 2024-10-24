@@ -2,6 +2,7 @@
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using EpiTrello.API.Interfaces;
 using EpiTrello.Core.Models;
 using EpiTrello.Infrastructure.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -11,21 +12,36 @@ namespace EpiTrello.API.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class AuthController : ControllerBase
+public class AuthController : BaseController
 {
     private readonly UserService _userService;
     private readonly IConfiguration _configuration;
+    private readonly IRequestTrackingService _requestTrackingService;
 
-    public AuthController(UserService userService, IConfiguration configuration)
+    public AuthController(UserService userService, IConfiguration configuration, IRequestTrackingService requestTrackingService)
     {
         _userService = userService;
         _configuration = configuration;
+        _requestTrackingService = requestTrackingService;
     }
     
     // POST: /auth/login
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] User user)
     {
+        string clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
+
+        if (_requestTrackingService.IsBanned(clientIp, out DateTime bannedUntil))
+        {
+            return BadRequest($"Too many requests. You are banned until {bannedUntil}.");
+        }
+
+        if (!_requestTrackingService.CheckRequestLimit(clientIp))
+        {
+            _requestTrackingService.BanClient(clientIp);
+            return BadRequest("Too many requests. You have been temporarily banned for 5 minutes.");
+        }
+        
         User? foundUser = await _userService.GetUserAsync(user.Username, HashPassword(user.Password));
 
         if (foundUser == null)

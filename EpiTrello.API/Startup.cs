@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using EpiTrello.API.Interfaces;
 using EpiTrello.Infrastructure.Data;
 using EpiTrello.Infrastructure.Factories;
 using EpiTrello.Infrastructure.Services;
@@ -47,6 +48,8 @@ public class Startup
         services.AddScoped<DaoFactory>();
         services.AddScoped<UserService>();
         services.AddScoped<BoardService>();
+        
+        services.AddSingleton<IRequestTrackingService, RequestTrackingService>();
         
         services.AddControllers();
     }

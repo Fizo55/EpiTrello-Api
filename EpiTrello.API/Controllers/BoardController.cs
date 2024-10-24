@@ -8,7 +8,7 @@ namespace EpiTrello.API.Controllers;
 [ApiController]
 [Route("[controller]")]
 [Authorize]
-public class BoardController : ControllerBase
+public class BoardController : BaseController
 {
     private readonly BoardService _boardService;
 
