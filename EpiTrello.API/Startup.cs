@@ -51,6 +51,17 @@ public class Startup
         
         services.AddSingleton<IRequestTrackingService, RequestTrackingService>();
         
+        services.AddCors(options =>
+        {
+            options.AddPolicy("AllowAll",
+                builder =>
+                {
+                    builder.AllowAnyOrigin()
+                        .AllowAnyMethod()
+                        .AllowAnyHeader();
+                });
+        });
+        
         services.AddControllers();
     }
 
@@ -70,6 +81,8 @@ public class Startup
         app.UseStaticFiles();
 
         app.UseRouting();
+        
+        app.UseCors("AllowAll");
 
         app.UseAuthentication(); 
         app.UseAuthorization();
