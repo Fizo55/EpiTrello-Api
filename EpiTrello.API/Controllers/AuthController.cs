@@ -25,6 +25,22 @@ public class AuthController : BaseController
         _requestTrackingService = requestTrackingService;
     }
     
+    // POST: /auth/register
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] User user)
+    {
+        bool isAvalaible = await _userService.IsUsernameAvailableAsync(user.Username);
+
+        if (!isAvalaible)
+        {
+            return BadRequest($"This username is already taken.");
+        }
+
+        user.Password = HashPassword(user.Password);
+        await _userService.CreateUserAsync(user);
+        return Ok();
+    }
+    
     // POST: /auth/login
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] User user)

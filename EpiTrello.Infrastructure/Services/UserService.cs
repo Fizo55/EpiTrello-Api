@@ -13,6 +13,11 @@ public class UserService
         _userDao = daoFactory.CreateDao<User>();
     }
 
+    public async Task<bool> IsUsernameAvailableAsync(string username)
+    {
+        return await _userDao.GetByPredicateAsync(s => s.Username == username) != null;
+    }
+
     public async Task<User?> GetUserAsync(string username, string password)
     {
         return await _userDao.GetByPredicateAsync(s => s.Username == username && s.Password == password);
