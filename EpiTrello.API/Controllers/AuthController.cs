@@ -29,9 +29,9 @@ public class AuthController : BaseController
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] User user)
     {
-        bool isAvalaible = await _userService.IsUsernameAvailableAsync(user.Username);
+        bool isAvailable = await _userService.IsUsernameAvailableAsync(user.Username);
 
-        if (!isAvalaible)
+        if (!isAvailable)
         {
             return BadRequest($"This username is already taken.");
         }
