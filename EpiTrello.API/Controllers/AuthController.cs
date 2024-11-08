@@ -3,8 +3,10 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using EpiTrello.API.Interfaces;
+using EpiTrello.API.Requests;
 using EpiTrello.Core.Models;
 using EpiTrello.Infrastructure.Services;
+using Google.Apis.Auth;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 
@@ -41,6 +43,41 @@ public class AuthController : BaseController
         return Ok();
     }
     
+    // POST: /auth/google-login
+    [HttpPost("google-login")]
+    public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequest request)
+    {
+        try
+        {
+            var payload = await GoogleJsonWebSignature.ValidateAsync(request.Token);
+
+            string token = string.Empty;
+            User? foundUser = await _userService.GetUserByUsernameAsync(payload.Email);
+
+            if (foundUser == null)
+            {
+                User user = new()
+                {
+                    Username = payload.Email,
+                    Password = string.Empty
+                };
+                
+                await _userService.CreateUserAsync(user);
+                token = GenerateJwtToken(user);
+            }
+            else
+            {
+                token = GenerateJwtToken(foundUser);
+            }
+        
+            return Ok(token);
+        }
+        catch (InvalidJwtException e)
+        {
+            return BadRequest($"Invalid Google token {e.Message}.");
+        }
+    }
+    
     // POST: /auth/login
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] User user)
@@ -57,10 +94,15 @@ public class AuthController : BaseController
             _requestTrackingService.BanClient(clientIp);
             return BadRequest("Too many requests. You have been temporarily banned for 5 minutes.");
         }
+
+        if (string.IsNullOrEmpty(user.Password))
+        {
+            return BadRequest("Your password can't be empty.");
+        }
         
         User? foundUser = await _userService.GetUserAsync(user.Username, HashPassword(user.Password));
 
-        if (foundUser == null)
+        if (foundUser == null || string.IsNullOrEmpty(foundUser.Password))
         {
             return BadRequest("Incorrect credentials");
         }
