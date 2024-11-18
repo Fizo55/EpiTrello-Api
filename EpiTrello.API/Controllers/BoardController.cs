@@ -38,8 +38,8 @@ public class BoardController : BaseController
         return Ok(board);
     }
 
-    // POST: /board
-    [HttpPost]
+    // POST: /board/createboard
+    [HttpPost("createboard")]
     public async Task<ActionResult<Board>> CreateBoard([FromBody] Board board)
     {
         if (!ModelState.IsValid)
