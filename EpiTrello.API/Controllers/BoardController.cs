@@ -12,11 +12,13 @@ public class BoardController : BaseController
 {
     private readonly BoardService _boardService;
     private readonly BlockService _blockService;
+    private readonly StageService _stageService;
 
-    public BoardController(BoardService boardService, BlockService blockService)
+    public BoardController(BoardService boardService, BlockService blockService, StageService stageService)
     {
         _boardService = boardService;
         _blockService = blockService;
+        _stageService = stageService;
     }
 
     // GET: /board
@@ -27,6 +29,41 @@ public class BoardController : BaseController
         return Ok(boards);
     }
     
+    // POST: /board/{boardId}/stages
+    [HttpPost("{boardId}/stages")]
+    public async Task<ActionResult<Stage>> CreateStage(int boardId, [FromBody] Stage stage)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        var board = await _boardService.GetBoardAsync(boardId);
+        if (board == null)
+        {
+            return NotFound("Board not found");
+        }
+
+        stage.BoardId = boardId;
+        await _stageService.AddStageAsync(stage);
+
+        return CreatedAtAction(nameof(GetStage), new { boardId = boardId, stageId = stage.Id }, stage);
+    }
+
+    // GET: /board/{boardId}/stages/{stageId}
+    [HttpGet("{boardId}/stages/{stageId}")]
+    public async Task<ActionResult<Stage>> GetStage(int boardId, int stageId)
+    {
+        var stage = await _stageService.GetStageAsync(boardId, stageId);
+        if (stage == null)
+        {
+            return NotFound();
+        }
+
+        return Ok(stage);
+    }
+    
+    // GET: /board/boardId/blocks
     [HttpPost("{boardId}/blocks")]
     public async Task<ActionResult<Block>> CreateBlock(int boardId, [FromBody] Block block)
     {
@@ -47,6 +84,7 @@ public class BoardController : BaseController
         return CreatedAtAction(nameof(GetBlock), new { boardId, blockId = block.Id }, block);
     }
     
+    // GET: /board/boardId/blocks/blockId
     [HttpGet("{boardId}/blocks/{blockId}")]
     public async Task<ActionResult<Block>> GetBlock(int boardId, int blockId)
     {
@@ -59,6 +97,7 @@ public class BoardController : BaseController
         return Ok(block);
     }
     
+    // PUT: /board/boardId/blocks/blockId
     [HttpPut("{boardId}/blocks/{blockId}")]
     public async Task<IActionResult> UpdateBlockStatus(int boardId, int blockId, [FromBody] Block block)
     {

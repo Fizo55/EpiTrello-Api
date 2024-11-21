@@ -49,6 +49,7 @@ public class Startup
         services.AddScoped<UserService>();
         services.AddScoped<BoardService>();
         services.AddScoped<BlockService>();
+        services.AddScoped<StageService>();
         
         services.AddSingleton<IRequestTrackingService, RequestTrackingService>();
         
