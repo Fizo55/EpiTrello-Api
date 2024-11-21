@@ -11,10 +11,12 @@ namespace EpiTrello.API.Controllers;
 public class BoardController : BaseController
 {
     private readonly BoardService _boardService;
+    private readonly BlockService _blockService;
 
-    public BoardController(BoardService boardService)
+    public BoardController(BoardService boardService, BlockService blockService)
     {
         _boardService = boardService;
+        _blockService = blockService;
     }
 
     // GET: /board
@@ -23,6 +25,57 @@ public class BoardController : BaseController
     {
         var boards = await _boardService.GetAllBoardsWithDetailsAsync();
         return Ok(boards);
+    }
+    
+    [HttpPost("{boardId}/blocks")]
+    public async Task<ActionResult<Block>> CreateBlock(int boardId, [FromBody] Block block)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        var board = await _boardService.GetBoardAsync(boardId);
+        if (board == null)
+        {
+            return NotFound("Board not found");
+        }
+
+        block.BoardId = boardId;
+        await _blockService.AddBlockAsync(block);
+
+        return CreatedAtAction(nameof(GetBlock), new { boardId, blockId = block.Id }, block);
+    }
+    
+    [HttpGet("{boardId}/blocks/{blockId}")]
+    public async Task<ActionResult<Block>> GetBlock(int boardId, int blockId)
+    {
+        var block = await _blockService.GetBlockAsync(boardId, blockId);
+        if (block == null)
+        {
+            return NotFound();
+        }
+
+        return Ok(block);
+    }
+    
+    [HttpPut("{boardId}/blocks/{blockId}")]
+    public async Task<IActionResult> UpdateBlockStatus(int boardId, int blockId, [FromBody] Block block)
+    {
+        if (blockId != block.Id)
+        {
+            return BadRequest("Block ID mismatch");
+        }
+
+        var existingBlock = await _blockService.GetBlockAsync(boardId, blockId);
+        if (existingBlock == null)
+        {
+            return NotFound();
+        }
+
+        existingBlock.Status = block.Status;
+        await _blockService.UpdateBlockAsync(existingBlock);
+        return NoContent();
     }
 
     // GET: /board/{id}

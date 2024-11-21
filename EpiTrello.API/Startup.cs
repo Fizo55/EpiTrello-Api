@@ -48,6 +48,7 @@ public class Startup
         services.AddScoped<DaoFactory>();
         services.AddScoped<UserService>();
         services.AddScoped<BoardService>();
+        services.AddScoped<BlockService>();
         
         services.AddSingleton<IRequestTrackingService, RequestTrackingService>();
         
