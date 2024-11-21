@@ -31,7 +31,7 @@ public class BoardController : BaseController
     
     // POST: /board/{boardId}/stages
     [HttpPost("{boardId}/stages")]
-    public async Task<ActionResult<Stage>> CreateStage(int boardId, [FromBody] Stage stage)
+    public async Task<ActionResult<Stage>> CreateStage(long boardId, [FromBody] Stage stage)
     {
         if (!ModelState.IsValid)
         {
@@ -47,12 +47,12 @@ public class BoardController : BaseController
         stage.BoardId = boardId;
         await _stageService.AddStageAsync(stage);
 
-        return CreatedAtAction(nameof(GetStage), new { boardId = boardId, stageId = stage.Id }, stage);
+        return CreatedAtAction(nameof(GetStage), new { boardId, stageId = stage.Id }, stage);
     }
 
     // GET: /board/{boardId}/stages/{stageId}
     [HttpGet("{boardId}/stages/{stageId}")]
-    public async Task<ActionResult<Stage>> GetStage(int boardId, int stageId)
+    public async Task<ActionResult<Stage>> GetStage(long boardId, int stageId)
     {
         var stage = await _stageService.GetStageAsync(boardId, stageId);
         if (stage == null)
@@ -65,7 +65,7 @@ public class BoardController : BaseController
     
     // GET: /board/boardId/blocks
     [HttpPost("{boardId}/blocks")]
-    public async Task<ActionResult<Block>> CreateBlock(int boardId, [FromBody] Block block)
+    public async Task<ActionResult<Block>> CreateBlock(long boardId, [FromBody] Block block)
     {
         if (!ModelState.IsValid)
         {
@@ -86,7 +86,7 @@ public class BoardController : BaseController
     
     // GET: /board/boardId/blocks/blockId
     [HttpGet("{boardId}/blocks/{blockId}")]
-    public async Task<ActionResult<Block>> GetBlock(int boardId, int blockId)
+    public async Task<ActionResult<Block>> GetBlock(long boardId, int blockId)
     {
         var block = await _blockService.GetBlockAsync(boardId, blockId);
         if (block == null)
@@ -99,7 +99,7 @@ public class BoardController : BaseController
     
     // PUT: /board/boardId/blocks/blockId
     [HttpPut("{boardId}/blocks/{blockId}")]
-    public async Task<IActionResult> UpdateBlockStatus(int boardId, int blockId, [FromBody] Block block)
+    public async Task<IActionResult> UpdateBlockStatus(long boardId, int blockId, [FromBody] Block block)
     {
         if (blockId != block.Id)
         {
@@ -119,7 +119,7 @@ public class BoardController : BaseController
 
     // GET: /board/{id}
     [HttpGet("{id}")]
-    public async Task<ActionResult<Board>> GetBoard(int id)
+    public async Task<ActionResult<Board>> GetBoard(long id)
     {
         var board = await _boardService.GetBoardWithDetailsAsync(id);
         if (board == null)
@@ -145,7 +145,7 @@ public class BoardController : BaseController
 
     // PUT: /board/{id}
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateBoard(int id, [FromBody] Board board)
+    public async Task<IActionResult> UpdateBoard(long id, [FromBody] Board board)
     {
         if (!ModelState.IsValid)
         {
@@ -169,7 +169,7 @@ public class BoardController : BaseController
 
     // DELETE: /board/{id}
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteBoard(int id)
+    public async Task<IActionResult> DeleteBoard(long id)
     {
         var board = await _boardService.GetBoardAsync(id);
         if (board == null)

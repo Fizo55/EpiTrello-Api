@@ -18,7 +18,7 @@ public class StageService
         await _stageDao.AddAsync(stage);
     }
     
-    public async Task<Stage?> GetStageAsync(int boardId, int stageId)
+    public async Task<Stage?> GetStageAsync(long boardId, int stageId)
     {
         return await _stageDao.GetSingleOrDefaultAsync(
             s => s.Id == stageId && s.BoardId == boardId);

@@ -13,12 +13,12 @@ public class BoardService
         _boardDao = daoFactory.CreateDao<Board>();
     }
 
-    public async Task<Board?> GetBoardAsync(int id)
+    public async Task<Board?> GetBoardAsync(long id)
     {
         return await _boardDao.GetByIdAsync(id);
     }
     
-    public async Task<Board?> GetBoardWithDetailsAsync(int id)
+    public async Task<Board?> GetBoardWithDetailsAsync(long id)
     {
         return await _boardDao.GetSingleOrDefaultAsync(
             b => b.Id == id,

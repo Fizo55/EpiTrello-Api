@@ -18,7 +18,7 @@ public class BlockService
         await _blockDao.AddAsync(block);
     }
 
-    public async Task<Block?> GetBlockAsync(int boardId, int blockId)
+    public async Task<Block?> GetBlockAsync(long boardId, int blockId)
     {
         return await _blockDao.GetSingleOrDefaultAsync(
             b => b.Id == blockId && b.BoardId == boardId);
