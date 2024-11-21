@@ -21,7 +21,7 @@ public class BoardController : BaseController
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Board>>> GetBoards()
     {
-        var boards = await _boardService.GetAllBoardsAsync();
+        var boards = await _boardService.GetAllBoardsWithDetailsAsync();
         return Ok(boards);
     }
 
@@ -29,7 +29,7 @@ public class BoardController : BaseController
     [HttpGet("{id}")]
     public async Task<ActionResult<Board>> GetBoard(int id)
     {
-        var board = await _boardService.GetBoardAsync(id);
+        var board = await _boardService.GetBoardWithDetailsAsync(id);
         if (board == null)
         {
             return NotFound();
