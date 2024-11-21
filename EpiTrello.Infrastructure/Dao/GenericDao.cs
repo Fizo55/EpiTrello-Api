@@ -64,15 +64,17 @@ public class GenericDao<T> : IGenericDao<T> where T : class
     }
 
     public async Task<IEnumerable<T>> GetAllWithIncludesAsync(
+        Expression<Func<T, bool>>? predicate,
         params Expression<Func<T, object>>[] includes)
     {
         IQueryable<T> query = _dbSet;
 
-        foreach (var include in includes)
+        if (predicate != null)
         {
-            query = query.Include(include);
+            query = query.Where(predicate);
         }
 
+        query = includes.Aggregate(query, (current, include) => current.Include(include));
         return await query.ToListAsync();
     }
 }

@@ -1,7 +1,9 @@
-﻿using EpiTrello.Core.Models;
+﻿using System.Security.Claims;
+using EpiTrello.Core.Models;
 using EpiTrello.Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.JsonWebTokens;
 
 namespace EpiTrello.API.Controllers;
 
@@ -10,12 +12,14 @@ namespace EpiTrello.API.Controllers;
 [Authorize]
 public class BoardController : BaseController
 {
+    private readonly UserService _userService;
     private readonly BoardService _boardService;
     private readonly BlockService _blockService;
     private readonly StageService _stageService;
 
-    public BoardController(BoardService boardService, BlockService blockService, StageService stageService)
+    public BoardController(UserService userService, BoardService boardService, BlockService blockService, StageService stageService)
     {
+        _userService = userService;
         _boardService = boardService;
         _blockService = blockService;
         _stageService = stageService;
@@ -25,7 +29,23 @@ public class BoardController : BaseController
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Board>>> GetBoards()
     {
-        var boards = await _boardService.GetAllBoardsWithDetailsAsync();
+        string? username = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+            ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? User.FindFirst(ClaimTypes.Name)?.Value;
+
+        if (string.IsNullOrEmpty(username))
+        {
+            return Unauthorized();
+        }
+        
+        User? user = await _userService.GetUserByUsernameAsync(username);
+
+        if (user == null)
+        {
+            return Unauthorized();
+        }
+        
+        var boards = await _boardService.GetAllBoardsWithDetailsAsync(user.Id);
         return Ok(boards);
     }
     
@@ -37,8 +57,24 @@ public class BoardController : BaseController
         {
             return BadRequest(ModelState);
         }
+        
+        string? username = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+            ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? User.FindFirst(ClaimTypes.Name)?.Value;
 
-        var board = await _boardService.GetBoardAsync(boardId);
+        if (string.IsNullOrEmpty(username))
+        {
+            return Unauthorized();
+        }
+        
+        User? user = await _userService.GetUserByUsernameAsync(username);
+
+        if (user == null)
+        {
+            return Unauthorized();
+        }
+
+        var board = await _boardService.GetBoardAsync(boardId, user.Id);
         if (board == null)
         {
             return NotFound("Board not found");
@@ -54,7 +90,23 @@ public class BoardController : BaseController
     [HttpGet("{boardId}/stages/{stageId}")]
     public async Task<ActionResult<Stage>> GetStage(long boardId, int stageId)
     {
-        var stage = await _stageService.GetStageAsync(boardId, stageId);
+        string? username = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+            ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? User.FindFirst(ClaimTypes.Name)?.Value;
+
+        if (string.IsNullOrEmpty(username))
+        {
+            return Unauthorized();
+        }
+        
+        User? user = await _userService.GetUserByUsernameAsync(username);
+
+        if (user == null)
+        {
+            return Unauthorized();
+        }
+        
+        var stage = await _stageService.GetStageAsync(boardId, stageId, user.Id);
         if (stage == null)
         {
             return NotFound();
@@ -71,8 +123,24 @@ public class BoardController : BaseController
         {
             return BadRequest(ModelState);
         }
+        
+        string? username = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+            ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? User.FindFirst(ClaimTypes.Name)?.Value;
 
-        var board = await _boardService.GetBoardAsync(boardId);
+        if (string.IsNullOrEmpty(username))
+        {
+            return Unauthorized();
+        }
+        
+        User? user = await _userService.GetUserByUsernameAsync(username);
+
+        if (user == null)
+        {
+            return Unauthorized();
+        }
+
+        var board = await _boardService.GetBoardAsync(boardId, user.Id);
         if (board == null)
         {
             return NotFound("Board not found");
@@ -88,7 +156,23 @@ public class BoardController : BaseController
     [HttpGet("{boardId}/blocks/{blockId}")]
     public async Task<ActionResult<Block>> GetBlock(long boardId, int blockId)
     {
-        var block = await _blockService.GetBlockAsync(boardId, blockId);
+        string? username = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+            ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? User.FindFirst(ClaimTypes.Name)?.Value;
+
+        if (string.IsNullOrEmpty(username))
+        {
+            return Unauthorized();
+        }
+        
+        User? user = await _userService.GetUserByUsernameAsync(username);
+
+        if (user == null)
+        {
+            return Unauthorized();
+        }
+
+        var block = await _blockService.GetBlockAsync(boardId, blockId, user.Id);
         if (block == null)
         {
             return NotFound();
@@ -105,8 +189,24 @@ public class BoardController : BaseController
         {
             return BadRequest("Block ID mismatch");
         }
+        
+        string? username = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+            ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? User.FindFirst(ClaimTypes.Name)?.Value;
+        
+        if (string.IsNullOrEmpty(username))
+        {
+            return Unauthorized();
+        }
+        
+        User? user = await _userService.GetUserByUsernameAsync(username);
 
-        var existingBlock = await _blockService.GetBlockAsync(boardId, blockId);
+        if (user == null)
+        {
+            return Unauthorized();
+        }
+
+        var existingBlock = await _blockService.GetBlockAsync(boardId, blockId, user.Id);
         if (existingBlock == null)
         {
             return NotFound();
@@ -121,7 +221,23 @@ public class BoardController : BaseController
     [HttpGet("{id}")]
     public async Task<ActionResult<Board>> GetBoard(long id)
     {
-        var board = await _boardService.GetBoardWithDetailsAsync(id);
+        string? username = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+            ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? User.FindFirst(ClaimTypes.Name)?.Value;
+        
+        if (string.IsNullOrEmpty(username))
+        {
+            return Unauthorized();
+        }
+        
+        User? user = await _userService.GetUserByUsernameAsync(username);
+
+        if (user == null)
+        {
+            return Unauthorized();
+        }
+        
+        var board = await _boardService.GetBoardWithDetailsAsync(id, user.Id);
         if (board == null)
         {
             return NotFound();
@@ -138,6 +254,24 @@ public class BoardController : BaseController
         {
             return BadRequest(ModelState);
         }
+        
+        string? username = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+            ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? User.FindFirst(ClaimTypes.Name)?.Value;
+        
+        if (string.IsNullOrEmpty(username))
+        {
+            return Unauthorized();
+        }
+        
+        User? user = await _userService.GetUserByUsernameAsync(username);
+
+        if (user == null)
+        {
+            return Unauthorized();
+        }
+
+        board.UserIds = new[] { user.Id };
 
         await _boardService.CreateBoardAsync(board);
         return CreatedAtAction(nameof(GetBoard), new { id = board.Id }, board);
@@ -156,8 +290,24 @@ public class BoardController : BaseController
         {
             return BadRequest("Board ID mismatch");
         }
+        
+        string? username = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+            ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? User.FindFirst(ClaimTypes.Name)?.Value;
+        
+        if (string.IsNullOrEmpty(username))
+        {
+            return Unauthorized();
+        }
+        
+        User? user = await _userService.GetUserByUsernameAsync(username);
 
-        var existingBoard = await _boardService.GetBoardAsync(id);
+        if (user == null)
+        {
+            return Unauthorized();
+        }
+
+        var existingBoard = await _boardService.GetBoardAsync(id, user.Id);
         if (existingBoard == null)
         {
             return NotFound();
@@ -171,7 +321,23 @@ public class BoardController : BaseController
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteBoard(long id)
     {
-        var board = await _boardService.GetBoardAsync(id);
+        string? username = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+            ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? User.FindFirst(ClaimTypes.Name)?.Value;
+        
+        if (string.IsNullOrEmpty(username))
+        {
+            return Unauthorized();
+        }
+        
+        User? user = await _userService.GetUserByUsernameAsync(username);
+
+        if (user == null)
+        {
+            return Unauthorized();
+        }
+        
+        var board = await _boardService.GetBoardAsync(id, user.Id);
         if (board == null)
         {
             return NotFound();

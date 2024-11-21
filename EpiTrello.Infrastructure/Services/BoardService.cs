@@ -12,28 +12,29 @@ public class BoardService
     {
         _boardDao = daoFactory.CreateDao<Board>();
     }
+    
+    public async Task<Board?> GetBoardAsync(long id, long userId)
+    {
+        return await _boardDao.GetByPredicateAsync(s => s.Id == id && s.UserIds.Contains(userId));
+    }
 
     public async Task<Board?> GetBoardAsync(long id)
     {
         return await _boardDao.GetByIdAsync(id);
     }
     
-    public async Task<Board?> GetBoardWithDetailsAsync(long id)
+    public async Task<Board?> GetBoardWithDetailsAsync(long id, long userId)
     {
         return await _boardDao.GetSingleOrDefaultAsync(
-            b => b.Id == id,
+            b => b.Id == id && b.UserIds.Contains(userId),
             b => b.Stages,
             b => b.Blocks);
     }
-
-    public async Task<IEnumerable<Board>> GetAllBoardsAsync()
-    {
-        return await _boardDao.GetAllAsync();
-    }
     
-    public async Task<IEnumerable<Board>> GetAllBoardsWithDetailsAsync()
+    public async Task<IEnumerable<Board>> GetAllBoardsWithDetailsAsync(long userId)
     {
         return await _boardDao.GetAllWithIncludesAsync(
+            b => b.UserIds.Contains(userId),
             b => b.Stages,
             b => b.Blocks);
     }

@@ -25,11 +25,6 @@ public class UserService
         return await _userDao.GetByPredicateAsync(s => s.Username == username && s.Password == password);
     }
 
-    public async Task<IEnumerable<User>> GetAllUserAsync()
-    {
-        return await _userDao.GetAllAsync();
-    }
-
     public async Task CreateUserAsync(User board)
     {
         await _userDao.AddAsync(board);

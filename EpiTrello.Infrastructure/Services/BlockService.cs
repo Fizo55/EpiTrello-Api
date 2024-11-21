@@ -7,10 +7,12 @@ namespace EpiTrello.Infrastructure.Services;
 public class BlockService
 {
     private readonly IGenericDao<Block> _blockDao;
+    private readonly IGenericDao<Board> _boardDao;
 
     public BlockService(DaoFactory daoFactory)
     {
         _blockDao = daoFactory.CreateDao<Block>();
+        _boardDao = daoFactory.CreateDao<Board>();
     }
         
     public async Task AddBlockAsync(Block block)
@@ -18,8 +20,15 @@ public class BlockService
         await _blockDao.AddAsync(block);
     }
 
-    public async Task<Block?> GetBlockAsync(long boardId, int blockId)
+    public async Task<Block?> GetBlockAsync(long boardId, int blockId, long userId)
     {
+        var board = await _boardDao.GetByPredicateAsync(s => s.Id == boardId && s.UserIds.Contains(userId));
+
+        if (board == null)
+        {
+            return null;
+        }
+        
         return await _blockDao.GetSingleOrDefaultAsync(
             b => b.Id == blockId && b.BoardId == boardId);
     }

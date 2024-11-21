@@ -1,8 +1,12 @@
-﻿namespace EpiTrello.Core.Models;
+﻿using System.Text.Json.Serialization;
+
+namespace EpiTrello.Core.Models;
 
 public class Board
 {
     public long Id { get; set; }
+    
+    public long[]? UserIds { get; set; }
     
     public int WorkspaceId { get; set; }
     
