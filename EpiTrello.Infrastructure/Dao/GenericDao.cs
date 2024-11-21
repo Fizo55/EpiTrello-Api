@@ -48,4 +48,31 @@ public class GenericDao<T> : IGenericDao<T> where T : class
         _dbSet.Remove(entity);
         await _context.SaveChangesAsync();
     }
+    
+    public async Task<T?> GetSingleOrDefaultAsync(
+        Expression<Func<T, bool>> predicate,
+        params Expression<Func<T, object>>[] includes)
+    {
+        IQueryable<T> query = _dbSet;
+
+        foreach (var include in includes)
+        {
+            query = query.Include(include);
+        }
+
+        return await query.SingleOrDefaultAsync(predicate);
+    }
+
+    public async Task<IEnumerable<T>> GetAllWithIncludesAsync(
+        params Expression<Func<T, object>>[] includes)
+    {
+        IQueryable<T> query = _dbSet;
+
+        foreach (var include in includes)
+        {
+            query = query.Include(include);
+        }
+
+        return await query.ToListAsync();
+    }
 }

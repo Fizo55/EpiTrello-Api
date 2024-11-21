@@ -17,10 +17,25 @@ public class BoardService
     {
         return await _boardDao.GetByIdAsync(id);
     }
+    
+    public async Task<Board?> GetBoardWithDetailsAsync(int id)
+    {
+        return await _boardDao.GetSingleOrDefaultAsync(
+            b => b.Id == id,
+            b => b.Stages,
+            b => b.Blocks);
+    }
 
     public async Task<IEnumerable<Board>> GetAllBoardsAsync()
     {
         return await _boardDao.GetAllAsync();
+    }
+    
+    public async Task<IEnumerable<Board>> GetAllBoardsWithDetailsAsync()
+    {
+        return await _boardDao.GetAllWithIncludesAsync(
+            b => b.Stages,
+            b => b.Blocks);
     }
 
     public async Task CreateBoardAsync(Board board)
