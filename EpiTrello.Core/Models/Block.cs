@@ -8,7 +8,7 @@ public class Block
     public string? Title { get; set; }
     public int Status { get; set; }
     public long BoardId { get; set; }
-    public string Description { get; set; }
+    public string? Description { get; set; }
     
     [JsonIgnore]
     public Board? Board { get; set; }
