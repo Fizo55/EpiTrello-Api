@@ -213,6 +213,8 @@ public class BoardController : BaseController
         }
 
         existingBlock.Status = block.Status;
+        existingBlock.Title = block.Title;
+        existingBlock.Description = block.Description;
         await _blockService.UpdateBlockAsync(existingBlock);
         return NoContent();
     }
