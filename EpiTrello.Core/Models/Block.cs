@@ -12,4 +12,6 @@ public class Block
     
     [JsonIgnore]
     public Board? Board { get; set; }
+    
+    public List<Ticket> Tickets { get; set; } = new();
 }

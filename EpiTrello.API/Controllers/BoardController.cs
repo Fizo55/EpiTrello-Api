@@ -115,6 +115,83 @@ public class BoardController : BaseController
         return Ok(stage);
     }
     
+    [HttpPost("{boardId}/blocks/{blockId}/tickets")]
+    public async Task<ActionResult<Ticket>> CreateTicket(long boardId, int blockId, [FromBody] Ticket ticket)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        string? username = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+                           ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                           ?? User.FindFirst(ClaimTypes.Name)?.Value;
+
+        if (string.IsNullOrEmpty(username))
+        {
+            return Unauthorized();
+        }
+
+        User? user = await _userService.GetUserByUsernameAsync(username);
+
+        if (user == null)
+        {
+            return Unauthorized();
+        }
+
+        var board = await _boardService.GetBoardAsync(boardId, user.Id);
+        if (board == null)
+        {
+            return NotFound("Board not found");
+        }
+
+        var block = await _blockService.GetBlockAsync(boardId, blockId, user.Id);
+        if (block == null)
+        {
+            return NotFound("Block not found");
+        }
+
+        ticket.BlockId = blockId;
+        await _blockService.AddTicketAsync(blockId, ticket);
+
+        return CreatedAtAction(nameof(GetTickets), new { boardId, blockId }, ticket);
+    }
+    
+    [HttpGet("{boardId}/blocks/{blockId}/tickets")]
+    public async Task<ActionResult<IEnumerable<Ticket>>> GetTickets(long boardId, int blockId)
+    {
+        string? username = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+                           ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                           ?? User.FindFirst(ClaimTypes.Name)?.Value;
+
+        if (string.IsNullOrEmpty(username))
+        {
+            return Unauthorized();
+        }
+
+        User? user = await _userService.GetUserByUsernameAsync(username);
+
+        if (user == null)
+        {
+            return Unauthorized();
+        }
+
+        var board = await _boardService.GetBoardAsync(boardId, user.Id);
+        if (board == null)
+        {
+            return NotFound("Board not found");
+        }
+
+        var block = await _blockService.GetBlockAsync(boardId, blockId, user.Id);
+        if (block == null)
+        {
+            return NotFound("Block not found");
+        }
+
+        var tickets = await _blockService.GetTicketsAsync(blockId);
+        return Ok(tickets);
+    }
+    
     // GET: /board/boardId/blocks
     [HttpPost("{boardId}/blocks")]
     public async Task<ActionResult<Block>> CreateBlock(long boardId, [FromBody] Block block)

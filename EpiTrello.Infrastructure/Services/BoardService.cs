@@ -1,6 +1,7 @@
 ﻿using EpiTrello.Core.Interfaces;
 using EpiTrello.Core.Models;
 using EpiTrello.Infrastructure.Factories;
+using Microsoft.EntityFrameworkCore;
 
 namespace EpiTrello.Infrastructure.Services;
 
@@ -27,16 +28,18 @@ public class BoardService
     {
         return await _boardDao.GetSingleOrDefaultAsync(
             b => b.Id == id && b.UserIds.Contains(userId),
-            b => b.Stages,
-            b => b.Blocks);
+            query => query.Include(b => b.Stages),
+            query => query.Include(b => b.Blocks).ThenInclude(block => block.Tickets)
+        );
     }
     
     public async Task<IEnumerable<Board>> GetAllBoardsWithDetailsAsync(long userId)
     {
         return await _boardDao.GetAllWithIncludesAsync(
             b => b.UserIds.Contains(userId),
-            b => b.Stages,
-            b => b.Blocks);
+            query => query.Include(b => b.Blocks).ThenInclude(block => block.Tickets),
+            query => query.Include(b => b.Stages)
+        );
     }
 
     public async Task CreateBoardAsync(Board board)

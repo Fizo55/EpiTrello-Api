@@ -13,6 +13,8 @@ public class EpiTrelloContext : DbContext
     public DbSet<Stage> Stages { get; set; }
     
     public DbSet<Block> Blocks { get; set; }
+    
+    public DbSet<Ticket> Tickets { get; set; }
 
     public EpiTrelloContext(DbContextOptions<EpiTrelloContext> options) : base(options)
     {
@@ -35,5 +37,19 @@ public class EpiTrelloContext : DbContext
         modelBuilder.Entity<Block>()
             .HasIndex(u => u.Id)
             .IsUnique();
+
+        modelBuilder.Entity<Ticket>()
+            .HasIndex(u => u.Id)
+            .IsUnique();
+        
+        modelBuilder.Entity<Board>()
+            .HasMany(b => b.Blocks)
+            .WithOne(b => b.Board)
+            .HasForeignKey(b => b.BoardId);
+
+        modelBuilder.Entity<Block>()
+            .HasMany(b => b.Tickets)
+            .WithOne(t => t.Block)
+            .HasForeignKey(t => t.BlockId);
     }
 }

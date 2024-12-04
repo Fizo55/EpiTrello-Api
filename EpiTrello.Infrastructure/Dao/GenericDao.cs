@@ -25,6 +25,11 @@ public class GenericDao<T> : IGenericDao<T> where T : class
     {
         return await _dbSet.FirstOrDefaultAsync(predicate);
     }
+    
+    public async Task<IEnumerable<T>> GetListByPredicateAsync(Expression<Func<T, bool>> predicate)
+    {
+        return await _dbSet.Where(predicate).ToListAsync();
+    }
 
     public async Task<IEnumerable<T>> GetAllAsync()
     {
@@ -51,21 +56,15 @@ public class GenericDao<T> : IGenericDao<T> where T : class
     
     public async Task<T?> GetSingleOrDefaultAsync(
         Expression<Func<T, bool>> predicate,
-        params Expression<Func<T, object>>[] includes)
+        params Func<IQueryable<T>, IQueryable<T>>[] includePaths)
     {
-        IQueryable<T> query = _dbSet;
-
-        foreach (var include in includes)
-        {
-            query = query.Include(include);
-        }
-
+        IQueryable<T> query = includePaths.Aggregate<Func<IQueryable<T>, IQueryable<T>>?, IQueryable<T>>(_dbSet, (current, includePath) => includePath(current));
         return await query.SingleOrDefaultAsync(predicate);
     }
 
     public async Task<IEnumerable<T>> GetAllWithIncludesAsync(
         Expression<Func<T, bool>>? predicate,
-        params Expression<Func<T, object>>[] includes)
+        params Func<IQueryable<T>, IQueryable<T>>[] includePaths)
     {
         IQueryable<T> query = _dbSet;
 
@@ -74,7 +73,8 @@ public class GenericDao<T> : IGenericDao<T> where T : class
             query = query.Where(predicate);
         }
 
-        query = includes.Aggregate(query, (current, include) => current.Include(include));
+        query = includePaths.Aggregate(query, (current, includePath) => includePath(current));
         return await query.ToListAsync();
     }
+
 }
