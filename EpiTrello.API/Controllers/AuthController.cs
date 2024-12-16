@@ -4,8 +4,8 @@ using System.Security.Cryptography;
 using System.Text;
 using EpiTrello.API.Interfaces;
 using EpiTrello.API.Requests;
+using EpiTrello.Core.Interfaces;
 using EpiTrello.Core.Models;
-using EpiTrello.Infrastructure.Services;
 using Google.Apis.Auth;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
@@ -16,13 +16,13 @@ namespace EpiTrello.API.Controllers;
 [Route("[controller]")]
 public class AuthController : BaseController
 {
-    private readonly UserService _userService;
+    private readonly IDatabaseHandler _dbHandler;
     private readonly IConfiguration _configuration;
     private readonly IRequestTrackingService _requestTrackingService;
 
-    public AuthController(UserService userService, IConfiguration configuration, IRequestTrackingService requestTrackingService)
+    public AuthController(IDatabaseHandler dbHandler, IConfiguration configuration, IRequestTrackingService requestTrackingService)
     {
-        _userService = userService;
+        _dbHandler = dbHandler;
         _configuration = configuration;
         _requestTrackingService = requestTrackingService;
     }
@@ -31,15 +31,15 @@ public class AuthController : BaseController
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] User user)
     {
-        bool isAvailable = await _userService.IsUsernameAvailableAsync(user.Username);
+        User? foundUser = (await _dbHandler.GetAsync<User>(s => s.Username == user.Username)).FirstOrDefault();
 
-        if (!isAvailable)
+        if (foundUser != null)
         {
-            return BadRequest($"This username is already taken.");
+            return BadRequest("This username is already taken.");
         }
 
         user.Password = HashPassword(user.Password);
-        await _userService.CreateUserAsync(user);
+        await _dbHandler.AddAsync(user);
         return Ok();
     }
     
@@ -52,8 +52,8 @@ public class AuthController : BaseController
             var payload = await GoogleJsonWebSignature.ValidateAsync(request.Token);
 
             string token = string.Empty;
-            User? foundUser = await _userService.GetUserByUsernameAsync(payload.Email);
-
+            User? foundUser = (await _dbHandler.GetAsync<User>(s => s.Username == payload.Name)).FirstOrDefault();
+            
             if (foundUser == null)
             {
                 User user = new()
@@ -62,7 +62,7 @@ public class AuthController : BaseController
                     Password = string.Empty
                 };
                 
-                await _userService.CreateUserAsync(user);
+                await _dbHandler.AddAsync(user);
                 token = GenerateJwtToken(user);
             }
             else
@@ -99,8 +99,8 @@ public class AuthController : BaseController
         {
             return BadRequest("Your password can't be empty.");
         }
-        
-        User? foundUser = await _userService.GetUserAsync(user.Username, HashPassword(user.Password));
+
+        User? foundUser = (await _dbHandler.GetAsync<User>(s => s.Username == user.Username && s.Password == HashPassword(user.Password))).FirstOrDefault();
 
         if (foundUser == null || string.IsNullOrEmpty(foundUser.Password))
         {

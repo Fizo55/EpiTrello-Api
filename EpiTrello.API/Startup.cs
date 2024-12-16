@@ -1,8 +1,8 @@
 ﻿using System.Text;
 using EpiTrello.API.Interfaces;
+using EpiTrello.Core.Interfaces;
+using EpiTrello.Infrastructure;
 using EpiTrello.Infrastructure.Data;
-using EpiTrello.Infrastructure.Factories;
-using EpiTrello.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -20,7 +20,7 @@ public class Startup
 
     public void ConfigureServices(IServiceCollection services)
     {
-        services.AddDbContext<EpiTrelloContext>(options =>
+        services.AddDbContextFactory<EpiTrelloContext>(options =>
             options.UseNpgsql(Configuration.GetConnectionString("DefaultConnection")));
         
         var jwtSettings = Configuration.GetSection("JwtSettings");
@@ -45,12 +45,7 @@ public class Startup
                 };
             });
 
-        services.AddScoped<DaoFactory>();
-        services.AddScoped<UserService>();
-        services.AddScoped<BoardService>();
-        services.AddScoped<BlockService>();
-        services.AddScoped<StageService>();
-        
+        services.AddScoped<IDatabaseHandler, DatabaseHandler>();
         services.AddSingleton<IRequestTrackingService, RequestTrackingService>();
         
         services.AddCors(options =>

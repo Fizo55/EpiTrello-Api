@@ -1,8 +1,9 @@
 ﻿using System.Security.Claims;
+using EpiTrello.Core.Interfaces;
 using EpiTrello.Core.Models;
-using EpiTrello.Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.JsonWebTokens;
 
 namespace EpiTrello.API.Controllers;
@@ -12,17 +13,11 @@ namespace EpiTrello.API.Controllers;
 [Authorize]
 public class BoardController : BaseController
 {
-    private readonly UserService _userService;
-    private readonly BoardService _boardService;
-    private readonly BlockService _blockService;
-    private readonly StageService _stageService;
+    public IDatabaseHandler _dbHandler;
 
-    public BoardController(UserService userService, BoardService boardService, BlockService blockService, StageService stageService)
+    public BoardController(IDatabaseHandler dbHandler)
     {
-        _userService = userService;
-        _boardService = boardService;
-        _blockService = blockService;
-        _stageService = stageService;
+        _dbHandler = dbHandler;
     }
 
     // GET: /board
@@ -38,14 +33,16 @@ public class BoardController : BaseController
             return Unauthorized();
         }
         
-        User? user = await _userService.GetUserByUsernameAsync(username);
+        User? user = (await _dbHandler.GetAsync<User>(s => s.Username == username)).FirstOrDefault();
 
         if (user == null)
         {
             return Unauthorized();
         }
         
-        var boards = await _boardService.GetAllBoardsWithDetailsAsync(user.Id);
+        var boards = await _dbHandler.GetAllWithIncludesAsync<Board>(b => b.UserIds.Contains(user.Id),
+            query => query.Include(b => b.Blocks).ThenInclude(block => block.Tickets),
+            query => query.Include(b => b.Stages));
         return Ok(boards);
     }
     
@@ -67,21 +64,21 @@ public class BoardController : BaseController
             return Unauthorized();
         }
         
-        User? user = await _userService.GetUserByUsernameAsync(username);
-
+        User? user = (await _dbHandler.GetAsync<User>(s => s.Username == username)).FirstOrDefault();
+        
         if (user == null)
         {
             return Unauthorized();
         }
 
-        var board = await _boardService.GetBoardAsync(boardId, user.Id);
+        var board = (await _dbHandler.GetAsync<Board>(s => s.Id == boardId && s.UserIds.Contains(user.Id))).FirstOrDefault();
         if (board == null)
         {
             return NotFound("Board not found");
         }
 
         stage.BoardId = boardId;
-        await _stageService.AddStageAsync(stage);
+        await _dbHandler.AddAsync(stage);
 
         return CreatedAtAction(nameof(GetStage), new { boardId, stageId = stage.Id }, stage);
     }
@@ -99,17 +96,23 @@ public class BoardController : BaseController
             return Unauthorized();
         }
         
-        User? user = await _userService.GetUserByUsernameAsync(username);
-
+        User? user = (await _dbHandler.GetAsync<User>(s => s.Username == username)).FirstOrDefault();
+        
         if (user == null)
         {
             return Unauthorized();
         }
         
-        var stage = await _stageService.GetStageAsync(boardId, stageId, user.Id);
-        if (stage == null)
+        var userHaveBoard = (await _dbHandler.GetAsync<Board>(s => s.UserIds.Contains(user.Id))).FirstOrDefault();
+        if (userHaveBoard == null)
         {
             return NotFound();
+        }
+
+        var stage = (await _dbHandler.GetAsync<Stage>(s => s.Id == stageId && s.BoardId == boardId)).FirstOrDefault();
+        if (stage == null)
+        {
+            return NotFound("Stage not found");
         }
 
         return Ok(stage);
@@ -132,27 +135,33 @@ public class BoardController : BaseController
             return Unauthorized();
         }
 
-        User? user = await _userService.GetUserByUsernameAsync(username);
-
+        User? user = (await _dbHandler.GetAsync<User>(s => s.Username == username)).FirstOrDefault();
+        
         if (user == null)
         {
             return Unauthorized();
         }
 
-        var board = await _boardService.GetBoardAsync(boardId, user.Id);
+        var board = (await _dbHandler.GetAsync<Board>(s => s.Id == boardId && s.UserIds.Contains(user.Id))).FirstOrDefault();
         if (board == null)
         {
             return NotFound("Board not found");
         }
 
-        var block = await _blockService.GetBlockAsync(boardId, blockId, user.Id);
-        if (block == null)
+        var userHaveBoard = (await _dbHandler.GetAsync<Board>(s => s.UserIds.Contains(user.Id))).FirstOrDefault();
+        if (userHaveBoard == null)
+        {
+            return NotFound();
+        }
+
+        var existingBlock = (await _dbHandler.GetAsync<Block>(s => s.Id == blockId && s.BoardId == boardId)).FirstOrDefault();
+        if (existingBlock == null)
         {
             return NotFound("Block not found");
         }
 
         ticket.BlockId = blockId;
-        await _blockService.AddTicketAsync(blockId, ticket);
+        await _dbHandler.AddAsync(ticket);
 
         return CreatedAtAction(nameof(GetTickets), new { boardId, blockId }, ticket);
     }
@@ -169,26 +178,32 @@ public class BoardController : BaseController
             return Unauthorized();
         }
 
-        User? user = await _userService.GetUserByUsernameAsync(username);
-
+        User? user = (await _dbHandler.GetAsync<User>(s => s.Username == username)).FirstOrDefault();
+        
         if (user == null)
         {
             return Unauthorized();
         }
 
-        var board = await _boardService.GetBoardAsync(boardId, user.Id);
+        var board = (await _dbHandler.GetAsync<Board>(s => s.Id == boardId && s.UserIds.Contains(user.Id))).FirstOrDefault();
         if (board == null)
         {
             return NotFound("Board not found");
         }
+        
+        var userHaveBoard = (await _dbHandler.GetAsync<Board>(s => s.UserIds.Contains(user.Id))).FirstOrDefault();
+        if (userHaveBoard == null)
+        {
+            return NotFound();
+        }
 
-        var block = await _blockService.GetBlockAsync(boardId, blockId, user.Id);
-        if (block == null)
+        var existingBlock = (await _dbHandler.GetAsync<Block>(s => s.Id == blockId && s.BoardId == boardId)).FirstOrDefault();
+        if (existingBlock == null)
         {
             return NotFound("Block not found");
         }
 
-        var tickets = await _blockService.GetTicketsAsync(blockId);
+        var tickets = await _dbHandler.GetAsync<Ticket>(s => s.BlockId == blockId);
         return Ok(tickets);
     }
     
@@ -210,21 +225,21 @@ public class BoardController : BaseController
             return Unauthorized();
         }
         
-        User? user = await _userService.GetUserByUsernameAsync(username);
-
+        User? user = (await _dbHandler.GetAsync<User>(s => s.Username == username)).FirstOrDefault();
+        
         if (user == null)
         {
             return Unauthorized();
         }
 
-        var board = await _boardService.GetBoardAsync(boardId, user.Id);
+        var board = (await _dbHandler.GetAsync<Board>(s => s.Id == boardId && s.UserIds.Contains(user.Id))).FirstOrDefault();
         if (board == null)
         {
             return NotFound("Board not found");
         }
 
         block.BoardId = boardId;
-        await _blockService.AddBlockAsync(block);
+        await _dbHandler.AddAsync(block);
 
         return CreatedAtAction(nameof(GetBlock), new { boardId, blockId = block.Id }, block);
     }
@@ -242,20 +257,27 @@ public class BoardController : BaseController
             return Unauthorized();
         }
         
-        User? user = await _userService.GetUserByUsernameAsync(username);
-
+        User? user = (await _dbHandler.GetAsync<User>(s => s.Username == username)).FirstOrDefault();
+        
         if (user == null)
         {
             return Unauthorized();
         }
 
-        var block = await _blockService.GetBlockAsync(boardId, blockId, user.Id);
-        if (block == null)
+        var userHaveBoard = (await _dbHandler.GetAsync<Board>(s => s.UserIds.Contains(user.Id))).FirstOrDefault();
+
+        if (userHaveBoard == null)
         {
             return NotFound();
         }
 
-        return Ok(block);
+        var existingBlock = (await _dbHandler.GetAsync<Block>(s => s.Id == blockId && s.BoardId == boardId)).FirstOrDefault();
+        if (existingBlock == null)
+        {
+            return NotFound();
+        }
+
+        return Ok(existingBlock);
     }
     
     // PUT: /board/boardId/blocks/blockId
@@ -276,14 +298,21 @@ public class BoardController : BaseController
             return Unauthorized();
         }
         
-        User? user = await _userService.GetUserByUsernameAsync(username);
-
+        User? user = (await _dbHandler.GetAsync<User>(s => s.Username == username)).FirstOrDefault();
+        
         if (user == null)
         {
             return Unauthorized();
         }
+        
+        var userHaveBoard = (await _dbHandler.GetAsync<Board>(s => s.UserIds.Contains(user.Id))).FirstOrDefault();
 
-        var existingBlock = await _blockService.GetBlockAsync(boardId, blockId, user.Id);
+        if (userHaveBoard == null)
+        {
+            return NotFound();
+        }
+
+        var existingBlock = (await _dbHandler.GetAsync<Block>(s => s.Id == blockId && s.BoardId == boardId)).FirstOrDefault();
         if (existingBlock == null)
         {
             return NotFound();
@@ -292,7 +321,7 @@ public class BoardController : BaseController
         existingBlock.Status = block.Status;
         existingBlock.Title = block.Title;
         existingBlock.Description = block.Description;
-        await _blockService.UpdateBlockAsync(existingBlock);
+        await _dbHandler.UpdateAsync(existingBlock);
         return NoContent();
     }
 
@@ -309,14 +338,16 @@ public class BoardController : BaseController
             return Unauthorized();
         }
         
-        User? user = await _userService.GetUserByUsernameAsync(username);
-
+        User? user = (await _dbHandler.GetAsync<User>(s => s.Username == username)).FirstOrDefault();
+        
         if (user == null)
         {
             return Unauthorized();
         }
         
-        var board = await _boardService.GetBoardWithDetailsAsync(id, user.Id);
+        var board = (await _dbHandler.GetAllWithIncludesAsync<Board>(b => b.Id == id && b.UserIds.Contains(user.Id),
+            query => query.Include(b => b.Blocks).ThenInclude(block => block.Tickets),
+            query => query.Include(b => b.Stages))).FirstOrDefault();
         if (board == null)
         {
             return NotFound();
@@ -343,8 +374,8 @@ public class BoardController : BaseController
             return Unauthorized();
         }
         
-        User? user = await _userService.GetUserByUsernameAsync(username);
-
+        User? user = (await _dbHandler.GetAsync<User>(s => s.Username == username)).FirstOrDefault();
+        
         if (user == null)
         {
             return Unauthorized();
@@ -352,7 +383,7 @@ public class BoardController : BaseController
 
         board.UserIds = new[] { user.Id };
 
-        await _boardService.CreateBoardAsync(board);
+        await _dbHandler.AddAsync(board);
         return CreatedAtAction(nameof(GetBoard), new { id = board.Id }, board);
     }
 
@@ -379,20 +410,20 @@ public class BoardController : BaseController
             return Unauthorized();
         }
         
-        User? user = await _userService.GetUserByUsernameAsync(username);
-
+        User? user = (await _dbHandler.GetAsync<User>(s => s.Username == username)).FirstOrDefault();
+        
         if (user == null)
         {
             return Unauthorized();
         }
 
-        var existingBoard = await _boardService.GetBoardAsync(id, user.Id);
+        var existingBoard = (await _dbHandler.GetAsync<Board>(s => s.Id == id && s.UserIds.Contains(user.Id))).FirstOrDefault();
         if (existingBoard == null)
         {
             return NotFound();
         }
 
-        await _boardService.UpdateBoardAsync(board);
+        await _dbHandler.UpdateAsync(board);
         return NoContent();
     }
 
@@ -409,20 +440,20 @@ public class BoardController : BaseController
             return Unauthorized();
         }
         
-        User? user = await _userService.GetUserByUsernameAsync(username);
-
+        User? user = (await _dbHandler.GetAsync<User>(s => s.Username == username)).FirstOrDefault();
+        
         if (user == null)
         {
             return Unauthorized();
         }
         
-        var board = await _boardService.GetBoardAsync(id, user.Id);
+        var board = (await _dbHandler.GetAsync<Board>(s => s.Id == id && s.UserIds.Contains(user.Id))).FirstOrDefault();
         if (board == null)
         {
             return NotFound();
         }
 
-        await _boardService.DeleteBoardAsync(board);
+        await _dbHandler.DeleteAsync(board);
         return NoContent();
     }
 }
