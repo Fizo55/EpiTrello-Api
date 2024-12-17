@@ -17,6 +17,8 @@ public class EpiTrelloContext : DbContext
     public DbSet<Ticket> Tickets { get; set; }
     
     public DbSet<InviteLink> InviteLink { get; set; }
+    
+    public DbSet<Comment> Comment { get; set; }
 
     public EpiTrelloContext(DbContextOptions<EpiTrelloContext> options) : base(options)
     {
@@ -45,6 +47,10 @@ public class EpiTrelloContext : DbContext
             .IsUnique();
 
         modelBuilder.Entity<InviteLink>()
+            .HasIndex(u => u.Id)
+            .IsUnique();
+        
+        modelBuilder.Entity<Comment>()
             .HasIndex(u => u.Id)
             .IsUnique();
         

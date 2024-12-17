@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace EpiTrello.Infrastructure.Migrations
 {
     [DbContext(typeof(EpiTrelloContext))]
-    [Migration("20241217183544_invitation-link")]
-    partial class invitationlink
+    [Migration("20241217194700_epitrello")]
+    partial class epitrello
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -83,6 +83,39 @@ namespace EpiTrello.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Boards");
+                });
+
+            modelBuilder.Entity("EpiTrello.Core.Models.Comment", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("BlockId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BlockId");
+
+                    b.HasIndex("Id")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Comment");
                 });
 
             modelBuilder.Entity("EpiTrello.Core.Models.InviteLink", b =>
@@ -205,6 +238,25 @@ namespace EpiTrello.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Board");
+                });
+
+            modelBuilder.Entity("EpiTrello.Core.Models.Comment", b =>
+                {
+                    b.HasOne("EpiTrello.Core.Models.Block", "Block")
+                        .WithMany()
+                        .HasForeignKey("BlockId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("EpiTrello.Core.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Block");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("EpiTrello.Core.Models.Stage", b =>

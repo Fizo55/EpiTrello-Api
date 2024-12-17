@@ -601,6 +601,95 @@ public class BoardController : BaseController
         return Ok();
     }
     
+    // GET: /board/{boardId}/blocks/{blockId}/comments
+    [HttpGet("{boardId}/blocks/{blockId}/comments")]
+    public async Task<ActionResult<IEnumerable<object>>> GetComments(long boardId, int blockId)
+    {
+        string? username = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+                           ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                           ?? User.FindFirst(ClaimTypes.Name)?.Value;
+
+        if (string.IsNullOrEmpty(username))
+        {
+            return Unauthorized();
+        }
+
+        User? user = (await _dbHandler.GetAsync<User>(s => s.Username == username)).FirstOrDefault();
+        if (user == null)
+        {
+            return Unauthorized();
+        }
+
+        var board = (await _dbHandler.GetAsync<Board>(b => b.Id == boardId && b.UserIds.Contains(user.Id))).FirstOrDefault();
+        if (board == null)
+        {
+            return NotFound();
+        }
+
+        var block = (await _dbHandler.GetAsync<Block>(b => b.Id == blockId && b.BoardId == boardId)).FirstOrDefault();
+        if (block == null)
+        {
+            return NotFound();
+        }
+
+        var comments = await _dbHandler.GetAllWithIncludesAsync<Comment>(
+            c => c.BlockId == blockId,
+            query => query.Include(c => c.User)
+        );
+
+        var commentDtos = comments.Select(c => new {
+            c.Id,
+            c.Content,
+            c.CreatedAt,
+            c.User?.Username
+        });
+
+        return Ok(commentDtos);
+    }
+
+    // POST: /board/{boardId}/blocks/{blockId}/comments
+    [HttpPost("{boardId}/blocks/{blockId}/comments")]
+    public async Task<IActionResult> CreateComment(long boardId, int blockId, [FromBody] CreateCommentRequest request)
+    {
+        string? username = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+                           ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                           ?? User.FindFirst(ClaimTypes.Name)?.Value;
+
+        if (string.IsNullOrEmpty(username))
+        {
+            return Unauthorized();
+        }
+
+        User? user = (await _dbHandler.GetAsync<User>(s => s.Username == username)).FirstOrDefault();
+        if (user == null)
+        {
+            return Unauthorized();
+        }
+
+        var board = (await _dbHandler.GetAsync<Board>(b => b.Id == boardId && b.UserIds.Contains(user.Id))).FirstOrDefault();
+        if (board == null)
+        {
+            return NotFound();
+        }
+
+        var block = (await _dbHandler.GetAsync<Block>(b => b.Id == blockId && b.BoardId == boardId)).FirstOrDefault();
+        if (block == null)
+        {
+            return NotFound();
+        }
+
+        var comment = new Comment
+        {
+            BlockId = blockId,
+            UserId = user.Id,
+            Content = request.Content,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        await _dbHandler.AddAsync(comment);
+        return Ok();
+    }
+
     private string GenerateToken()
     {
         return Guid.NewGuid().ToString("N");
