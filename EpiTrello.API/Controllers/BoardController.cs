@@ -1,4 +1,5 @@
 ﻿using System.Security.Claims;
+using EpiTrello.API.Requests;
 using EpiTrello.Core.Interfaces;
 using EpiTrello.Core.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -46,6 +47,55 @@ public class BoardController : BaseController
         return Ok(boards);
     }
     
+    // PUT: /board/{boardId}/stages/order
+    [HttpPut("{boardId}/stages/order")]
+    public async Task<IActionResult> UpdateStagesOrder(long boardId, [FromBody] UpdateStagesOrderRequest request)
+    {
+        if (request.Stages.Count == 0)
+        {
+            return BadRequest("No stages provided for reorder.");
+        }
+    
+        string? username = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+                           ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                           ?? User.FindFirst(ClaimTypes.Name)?.Value;
+
+        if (string.IsNullOrEmpty(username))
+        {
+            return Unauthorized();
+        }
+
+        User? user = (await _dbHandler.GetAsync<User>(s => s.Username == username)).FirstOrDefault();
+        if (user == null)
+        {
+            return Unauthorized();
+        }
+
+        var board = (await _dbHandler.GetAsync<Board>(s => s.Id == boardId && s.UserIds.Contains(user.Id))).FirstOrDefault();
+        if (board == null)
+        {
+            return NotFound("Board not found");
+        }
+
+        var stages = await _dbHandler.GetAsync<Stage>(s => s.BoardId == boardId);
+        var stageDictionary = stages.ToDictionary(s => s.Id, s => s);
+
+        foreach (var updatedStage in request.Stages)
+        {
+            if (stageDictionary.TryGetValue(updatedStage.Id, out var existingStage))
+            {
+                existingStage.Place = updatedStage.Place;
+                await _dbHandler.UpdateAsync(existingStage);
+            }
+            else
+            {
+                return BadRequest($"Stage with ID {updatedStage.Id} does not exist in this board.");
+            }
+        }
+
+        return NoContent();
+    }
+    
     // POST: /board/{boardId}/stages
     [HttpPost("{boardId}/stages")]
     public async Task<ActionResult<Stage>> CreateStage(long boardId, [FromBody] Stage stage)
@@ -77,6 +127,9 @@ public class BoardController : BaseController
             return NotFound("Board not found");
         }
 
+        var latestStages = (await _dbHandler.GetAsync<Stage>(s => s.BoardId == boardId)).OrderByDescending(s => s.Place).FirstOrDefault();
+
+        stage.Place = latestStages?.Place + 1 ?? 0;
         stage.BoardId = boardId;
         await _dbHandler.AddAsync(stage);
 
