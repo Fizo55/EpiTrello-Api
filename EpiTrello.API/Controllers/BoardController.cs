@@ -14,10 +14,12 @@ namespace EpiTrello.API.Controllers;
 [Authorize]
 public class BoardController : BaseController
 {
+    public IConfiguration _configureation;
     public IDatabaseHandler _dbHandler;
 
-    public BoardController(IDatabaseHandler dbHandler)
+    public BoardController(IConfiguration configuration, IDatabaseHandler dbHandler)
     {
+        _configureation = configuration;
         _dbHandler = dbHandler;
     }
 
@@ -508,5 +510,99 @@ public class BoardController : BaseController
 
         await _dbHandler.DeleteAsync(board);
         return NoContent();
+    }
+    
+    [HttpPost("{boardId}/invite/link")]
+    public async Task<IActionResult> CreateInviteLink(long boardId, [FromBody] CreateInviteLinkRequest request)
+    {
+        string? username = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+                           ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                           ?? User.FindFirst(ClaimTypes.Name)?.Value;
+
+        if (string.IsNullOrEmpty(username))
+        {
+            return Unauthorized();
+        }
+    
+        User? currentUser = (await _dbHandler.GetAsync<User>(s => s.Username == username)).FirstOrDefault();
+        if (currentUser == null)
+        {
+            return Unauthorized();
+        }
+
+        var board = (await _dbHandler.GetAsync<Board>(s => s.Id == boardId && s.UserIds.Contains(currentUser.Id))).FirstOrDefault();
+        if (board == null)
+        {
+            return NotFound();
+        }
+
+        var token = GenerateToken();
+        var inviteLink = new InviteLink
+        {
+            BoardId = boardId,
+            Token = token,
+            CreatedAt = DateTime.UtcNow,
+            ExpiresAt = DateTime.UtcNow.AddDays(request.DaysValid),
+            Status = "Active"
+        };
+
+        await _dbHandler.AddAsync(inviteLink);
+
+        var inviteUrl = $"{_configureation["WebsiteUrl"]}/board/invite/{token}/accept";
+        
+        return Ok(new { inviteUrl });
+    }
+    
+    [HttpPost("invite/{token}/accept")]
+    public async Task<IActionResult> AcceptInviteLink(string token)
+    {
+        string? username = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+                           ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                           ?? User.FindFirst(ClaimTypes.Name)?.Value;
+
+        if (string.IsNullOrEmpty(username))
+        {
+            return Unauthorized();
+        }
+
+        User? currentUser = (await _dbHandler.GetAsync<User>(s => s.Username == username)).FirstOrDefault();
+        if (currentUser == null)
+        {
+            return Unauthorized();
+        }
+
+        var inviteLink = (await _dbHandler.GetAsync<InviteLink>(i => i.Token == token && i.Status == "Active")).FirstOrDefault();
+        if (inviteLink == null)
+        {
+            return NotFound();
+        }
+
+        if (DateTime.UtcNow > inviteLink.ExpiresAt)
+        {
+            inviteLink.Status = "Expired";
+            await _dbHandler.UpdateAsync(inviteLink);
+            return BadRequest();
+        }
+
+        var board = (await _dbHandler.GetAsync<Board>(b => b.Id == inviteLink.BoardId)).FirstOrDefault();
+        if (board == null)
+        {
+            return NotFound();
+        }
+
+        var userIds = board.UserIds.ToList();
+        if (!userIds.Contains(currentUser.Id))
+        {
+            userIds.Add(currentUser.Id);
+            board.UserIds = userIds.ToArray();
+            await _dbHandler.UpdateAsync(board);
+        }
+
+        return Ok();
+    }
+    
+    private string GenerateToken()
+    {
+        return Guid.NewGuid().ToString("N");
     }
 }
