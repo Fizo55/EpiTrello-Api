@@ -264,7 +264,7 @@ public class BoardController : BaseController
     
     // GET: /board/boardId/blocks
     [HttpPost("{boardId}/blocks")]
-    public async Task<ActionResult<Block>> CreateBlock(long boardId, [FromBody] Block block)
+    public async Task<IActionResult> CreateBlock(long boardId, [FromBody] Block block, [FromServices] WebSocketManager webSocketManager)
     {
         if (!ModelState.IsValid)
         {
@@ -294,9 +294,12 @@ public class BoardController : BaseController
         }
 
         block.BoardId = boardId;
-        await _dbHandler.AddAsync(block);
+        Block createdBlock = await _dbHandler.AddAsync(block);
 
-        return CreatedAtAction(nameof(GetBlock), new { boardId, blockId = block.Id }, block);
+        var update = new { message = $"{username}:block_created", createdBlock };
+        await webSocketManager.NotifyAsync(boardId, update);
+
+        return Ok(createdBlock);
     }
     
     // GET: /board/boardId/blocks/blockId

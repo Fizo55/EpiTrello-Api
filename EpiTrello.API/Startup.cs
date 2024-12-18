@@ -47,6 +47,7 @@ public class Startup
 
         services.AddScoped<IDatabaseHandler, DatabaseHandler>();
         services.AddSingleton<IRequestTrackingService, RequestTrackingService>();
+        services.AddSingleton<WebSocketManager>();
         
         services.AddCors(options =>
         {
@@ -73,6 +74,8 @@ public class Startup
             app.UseExceptionHandler("/Home/Error");
             app.UseHsts();
         }
+        
+        app.UseWebSockets();
 
         app.UseHttpsRedirection();
         app.UseStaticFiles();

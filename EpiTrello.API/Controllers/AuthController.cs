@@ -62,7 +62,7 @@ public class AuthController : BaseController
                     Password = string.Empty
                 };
                 
-                await _dbHandler.AddAsync(user);
+                foundUser = await _dbHandler.AddAsync(user);
                 token = GenerateJwtToken(user);
             }
             else
@@ -70,7 +70,11 @@ public class AuthController : BaseController
                 token = GenerateJwtToken(foundUser);
             }
         
-            return Ok(token);
+            return Ok(new
+            {
+                Token = token,
+                foundUser.Username
+            });
         }
         catch (InvalidJwtException e)
         {
@@ -108,7 +112,11 @@ public class AuthController : BaseController
         }
 
         string token = GenerateJwtToken(foundUser);
-        return Ok(token);
+        return Ok(new
+        {
+            Token = token,
+            foundUser.Username
+        });
     }
     
     private string HashPassword(string password)
