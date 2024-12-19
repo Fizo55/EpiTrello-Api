@@ -389,7 +389,7 @@ public class BoardController : BaseController
         existingBlock.Description = block.Description;
         await _dbHandler.UpdateAsync(existingBlock);
         
-        var update = new { message = $"{username}:block_reordered", existingBlock };
+        var update = new { message = $"{username}:block_updated", existingBlock };
         await webSocketManager.NotifyAsync(boardId, update);
         
         return NoContent();
