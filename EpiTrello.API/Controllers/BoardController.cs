@@ -348,7 +348,7 @@ public class BoardController : BaseController
     
     // PUT: /board/boardId/blocks/blockId
     [HttpPut("{boardId}/blocks/{blockId}")]
-    public async Task<IActionResult> UpdateBlockStatus(long boardId, int blockId, [FromBody] Block block)
+    public async Task<IActionResult> UpdateBlockStatus(long boardId, int blockId, [FromBody] Block block, [FromServices] WebSocketManager webSocketManager)
     {
         if (blockId != block.Id)
         {
@@ -388,6 +388,10 @@ public class BoardController : BaseController
         existingBlock.Title = block.Title;
         existingBlock.Description = block.Description;
         await _dbHandler.UpdateAsync(existingBlock);
+        
+        var update = new { message = $"{username}:block_reordered", existingBlock };
+        await webSocketManager.NotifyAsync(boardId, update);
+        
         return NoContent();
     }
 
