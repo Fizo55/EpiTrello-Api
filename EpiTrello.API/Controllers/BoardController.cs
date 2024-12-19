@@ -100,7 +100,7 @@ public class BoardController : BaseController
     
     // POST: /board/{boardId}/stages
     [HttpPost("{boardId}/stages")]
-    public async Task<ActionResult<Stage>> CreateStage(long boardId, [FromBody] Stage stage)
+    public async Task<IActionResult> CreateStage(long boardId, [FromBody] Stage stage, [FromServices] WebSocketManager webSocketManager)
     {
         if (!ModelState.IsValid)
         {
@@ -133,9 +133,12 @@ public class BoardController : BaseController
 
         stage.Place = latestStages?.Place + 1 ?? 0;
         stage.BoardId = boardId;
-        await _dbHandler.AddAsync(stage);
+        Stage createdStage = await _dbHandler.AddAsync(stage);
+        
+        var update = new { message = $"{username}:stage_created", createdStage };
+        await webSocketManager.NotifyAsync(boardId, update);
 
-        return CreatedAtAction(nameof(GetStage), new { boardId, stageId = stage.Id }, stage);
+        return Ok(createdStage);
     }
 
     // GET: /board/{boardId}/stages/{stageId}
