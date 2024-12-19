@@ -667,7 +667,7 @@ public class BoardController : BaseController
 
     // POST: /board/{boardId}/blocks/{blockId}/comments
     [HttpPost("{boardId}/blocks/{blockId}/comments")]
-    public async Task<IActionResult> CreateComment(long boardId, int blockId, [FromBody] CreateCommentRequest request)
+    public async Task<IActionResult> CreateComment(long boardId, int blockId, [FromBody] CreateCommentRequest request, [FromServices] WebSocketManager webSocketManager)
     {
         string? username = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
                            ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
@@ -704,8 +704,23 @@ public class BoardController : BaseController
             CreatedAt = DateTime.UtcNow
         };
 
-        await _dbHandler.AddAsync(comment);
-        return Ok();
+        Comment newComment = await _dbHandler.AddAsync(comment);
+        
+        var update = new
+        {
+            message = $"{username}:comment_created",
+            newComment = new
+            {
+                newComment.Id,
+                newComment.Content,
+                newComment.CreatedAt,
+                Username = username,
+                BlockId = blockId
+            }
+        };
+        await webSocketManager.NotifyAsync(boardId, update);
+        
+        return Ok(newComment);
     }
 
     private string GenerateToken()
