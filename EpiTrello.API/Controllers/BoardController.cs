@@ -51,7 +51,7 @@ public class BoardController : BaseController
     
     // PUT: /board/{boardId}/stages/order
     [HttpPut("{boardId}/stages/order")]
-    public async Task<IActionResult> UpdateStagesOrder(long boardId, [FromBody] UpdateStagesOrderRequest request)
+    public async Task<IActionResult> UpdateStagesOrder(long boardId, [FromBody] UpdateStagesOrderRequest request, [FromServices] WebSocketManager webSocketManager)
     {
         if (request.Stages.Count == 0)
         {
@@ -94,6 +94,11 @@ public class BoardController : BaseController
                 return BadRequest($"Stage with ID {updatedStage.Id} does not exist in this board.");
             }
         }
+
+        var reorderedStages = await _dbHandler.GetAsync<Stage>(s => s.BoardId == boardId);
+        
+        var update = new { message = $"{username}:stage_reordered", reorderedStages };
+        await webSocketManager.NotifyAsync(boardId, update);
 
         return NoContent();
     }
