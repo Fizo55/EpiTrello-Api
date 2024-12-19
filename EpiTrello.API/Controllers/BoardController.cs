@@ -182,7 +182,7 @@ public class BoardController : BaseController
     }
     
     [HttpPost("{boardId}/blocks/{blockId}/tickets")]
-    public async Task<ActionResult<Ticket>> CreateTicket(long boardId, int blockId, [FromBody] Ticket ticket)
+    public async Task<ActionResult> CreateTicket(long boardId, int blockId, [FromBody] Ticket ticket, [FromServices] WebSocketManager webSocketManager)
     {
         if (!ModelState.IsValid)
         {
@@ -224,9 +224,12 @@ public class BoardController : BaseController
         }
 
         ticket.BlockId = blockId;
-        await _dbHandler.AddAsync(ticket);
+        Ticket createdTicket = await _dbHandler.AddAsync(ticket);
 
-        return CreatedAtAction(nameof(GetTickets), new { boardId, blockId }, ticket);
+        var update = new { message = $"{username}:ticket_created", createdTicket };
+        await webSocketManager.NotifyAsync(boardId, update);
+        
+        return Ok(createdTicket);
     }
     
     [HttpGet("{boardId}/blocks/{blockId}/tickets")]
