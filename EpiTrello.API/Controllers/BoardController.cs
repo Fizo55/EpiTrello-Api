@@ -459,6 +459,55 @@ public class BoardController : BaseController
         await _dbHandler.AddAsync(board);
         return CreatedAtAction(nameof(GetBoard), new { id = board.Id }, board);
     }
+    
+    // PUT: /board/{boardId}/stages/{stageId}
+    [HttpPut("{boardId}/stages/{stageId}")]
+    public async Task<IActionResult> EditStageName(
+        long boardId, 
+        int stageId, 
+        [FromBody] EditStageNameRequest request, 
+        [FromServices] WebSocketManager webSocketManager)
+    {
+        if (!ModelState.IsValid || string.IsNullOrWhiteSpace(request.Name))
+        {
+            return BadRequest("Invalid stage name.");
+        }
+
+        string? username = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+                           ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                           ?? User.FindFirst(ClaimTypes.Name)?.Value;
+
+        if (string.IsNullOrEmpty(username))
+        {
+            return Unauthorized();
+        }
+
+        User? user = (await _dbHandler.GetAsync<User>(s => s.Username == username)).FirstOrDefault();
+        if (user == null)
+        {
+            return Unauthorized();
+        }
+
+        var board = (await _dbHandler.GetAsync<Board>(b => b.Id == boardId && b.UserIds.Contains(user.Id))).FirstOrDefault();
+        if (board == null)
+        {
+            return NotFound("Board not found.");
+        }
+
+        var stage = (await _dbHandler.GetAsync<Stage>(s => s.Id == stageId && s.BoardId == boardId)).FirstOrDefault();
+        if (stage == null)
+        {
+            return NotFound("Stage not found.");
+        }
+
+        stage.Name = request.Name;
+        await _dbHandler.UpdateAsync(stage);
+
+        var update = new { message = $"{username}:stage_renamed", renamedStage = stage };
+        await webSocketManager.NotifyAsync(boardId, update);
+
+        return Ok(stage);
+    }
 
     // PUT: /board/{id}
     [HttpPut("{id}")]
