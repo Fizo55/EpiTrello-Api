@@ -664,6 +664,50 @@ public class BoardController : BaseController
 
         return Ok(commentDtos);
     }
+    
+    [HttpDelete("{boardId}/stages/{stageId}")]
+    public async Task<IActionResult> DeleteStage(long boardId, int stageId, [FromServices] WebSocketManager webSocketManager)
+    {
+        string? username = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+                           ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                           ?? User.FindFirst(ClaimTypes.Name)?.Value;
+
+        if (string.IsNullOrEmpty(username))
+        {
+            return Unauthorized();
+        }
+
+        User? user = (await _dbHandler.GetAsync<User>(s => s.Username == username)).FirstOrDefault();
+        if (user == null)
+        {
+            return Unauthorized();
+        }
+
+        var board = (await _dbHandler.GetAsync<Board>(s => s.Id == boardId && s.UserIds.Contains(user.Id))).FirstOrDefault();
+        if (board == null)
+        {
+            return NotFound();
+        }
+
+        var stage = (await _dbHandler.GetAsync<Stage>(s => s.Id == stageId && s.BoardId == boardId)).FirstOrDefault();
+        if (stage == null)
+        {
+            return NotFound();
+        }
+
+        var blocks = await _dbHandler.GetAsync<Block>(b => b.Status == stageId && b.BoardId == boardId);
+        foreach (var block in blocks)
+        {
+            await _dbHandler.DeleteAsync(block);
+        }
+
+        await _dbHandler.DeleteAsync(stage);
+
+        var update = new { message = $"{username}:stage_deleted", stageId };
+        await webSocketManager.NotifyAsync(boardId, update);
+
+        return NoContent();
+    }
 
     // POST: /board/{boardId}/blocks/{blockId}/comments
     [HttpPost("{boardId}/blocks/{blockId}/comments")]
