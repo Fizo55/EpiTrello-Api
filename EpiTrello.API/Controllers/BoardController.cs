@@ -698,6 +698,18 @@ public class BoardController : BaseController
         var blocks = await _dbHandler.GetAsync<Block>(b => b.Status == stageId && b.BoardId == boardId);
         foreach (var block in blocks)
         {
+            var comments = await _dbHandler.GetAsync<Comment>(c => c.BlockId == block.Id);
+            foreach (var comment in comments)
+            {
+                await _dbHandler.DeleteAsync(comment);
+            }
+
+            var tickets = await _dbHandler.GetAsync<Ticket>(t => t.BlockId == block.Id);
+            foreach (var ticket in tickets)
+            {
+                await _dbHandler.DeleteAsync(ticket);
+            }
+            
             await _dbHandler.DeleteAsync(block);
         }
 
