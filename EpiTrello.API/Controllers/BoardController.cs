@@ -44,7 +44,8 @@ public class BoardController : BaseController
         }
         
         var boards = await _dbHandler.GetAllWithIncludesAsync<Board>(b => b.UserIds.Contains(user.Id),
-            query => query.Include(b => b.Blocks).ThenInclude(block => block.Tickets),
+            query  => query.Include(b => b.Tickets),
+            query => query.Include(b => b.Blocks),
             query => query.Include(b => b.Stages));
         return Ok(boards);
     }
@@ -407,7 +408,8 @@ public class BoardController : BaseController
         }
         
         var board = (await _dbHandler.GetAllWithIncludesAsync<Board>(b => b.Id == id && b.UserIds.Contains(user.Id),
-            query => query.Include(b => b.Blocks).ThenInclude(block => block.Tickets),
+            query => query.Include(block => block.Tickets),
+            query => query.Include(b => b.Blocks),
             query => query.Include(b => b.Stages))).FirstOrDefault();
         if (board == null)
         {
