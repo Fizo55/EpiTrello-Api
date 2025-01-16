@@ -181,8 +181,8 @@ public class BoardController : BaseController
         return Ok(stage);
     }
     
-    [HttpPost("{boardId}/blocks/{blockId}/tickets")]
-    public async Task<ActionResult> CreateTicket(long boardId, int blockId, [FromBody] Ticket ticket, [FromServices] WebSocketManager webSocketManager)
+    [HttpPost("{boardId}/tickets")]
+    public async Task<ActionResult> CreateTicket(long boardId, [FromBody] Ticket ticket, [FromServices] WebSocketManager webSocketManager)
     {
         if (!ModelState.IsValid)
         {
@@ -217,13 +217,7 @@ public class BoardController : BaseController
             return NotFound();
         }
 
-        var existingBlock = (await _dbHandler.GetAsync<Block>(s => s.Id == blockId && s.BoardId == boardId)).FirstOrDefault();
-        if (existingBlock == null)
-        {
-            return NotFound("Block not found");
-        }
-
-        ticket.BlockId = blockId;
+        ticket.BoardId = boardId;
         Ticket createdTicket = await _dbHandler.AddAsync(ticket);
 
         var update = new { message = $"{username}:ticket_created", createdTicket };
@@ -232,8 +226,8 @@ public class BoardController : BaseController
         return Ok(createdTicket);
     }
     
-    [HttpGet("{boardId}/blocks/{blockId}/tickets")]
-    public async Task<ActionResult<IEnumerable<Ticket>>> GetTickets(long boardId, int blockId)
+    [HttpGet("{boardId}/tickets")]
+    public async Task<ActionResult<IEnumerable<Ticket>>> GetTickets(long boardId)
     {
         string? username = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
                            ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
@@ -263,13 +257,7 @@ public class BoardController : BaseController
             return NotFound();
         }
 
-        var existingBlock = (await _dbHandler.GetAsync<Block>(s => s.Id == blockId && s.BoardId == boardId)).FirstOrDefault();
-        if (existingBlock == null)
-        {
-            return NotFound("Block not found");
-        }
-
-        var tickets = await _dbHandler.GetAsync<Ticket>(s => s.BlockId == blockId);
+        var tickets = await _dbHandler.GetAsync<Ticket>(s => s.BoardId == boardId);
         return Ok(tickets);
     }
     
@@ -753,7 +741,7 @@ public class BoardController : BaseController
                 await _dbHandler.DeleteAsync(comment);
             }
 
-            var tickets = await _dbHandler.GetAsync<Ticket>(t => t.BlockId == block.Id);
+            var tickets = await _dbHandler.GetAsync<Ticket>(t => t.BoardId == boardId);
             foreach (var ticket in tickets)
             {
                 await _dbHandler.DeleteAsync(ticket);

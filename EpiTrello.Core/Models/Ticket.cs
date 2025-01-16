@@ -8,8 +8,8 @@ public class Ticket
     public string? Name { get; set; }
     public string? Color { get; set; }
 
-    public long BlockId { get; set; }
-    
+    public long BoardId { get; set; }
+
     [JsonIgnore]
-    public Block? Block { get; set; }
+    public Board? Board { get; set; }
 }

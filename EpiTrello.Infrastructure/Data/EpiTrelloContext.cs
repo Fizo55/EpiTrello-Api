@@ -58,10 +58,10 @@ public class EpiTrelloContext : DbContext
             .HasMany(b => b.Blocks)
             .WithOne(b => b.Board)
             .HasForeignKey(b => b.BoardId);
-
-        modelBuilder.Entity<Block>()
-            .HasMany(b => b.Tickets)
-            .WithOne(t => t.Block)
-            .HasForeignKey(t => t.BlockId);
+        
+        modelBuilder.Entity<Board>()
+            .HasMany(t => t.Stages)
+            .WithOne(b => b.Board)
+            .HasForeignKey(t => t.BoardId);
     }
 }
