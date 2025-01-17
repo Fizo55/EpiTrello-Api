@@ -182,6 +182,58 @@ public class BoardController : BaseController
         return Ok(stage);
     }
     
+    [HttpPost("{boardId}/blocks/{blockId}/tickets")]
+    public async Task<IActionResult> AssignTicketToBlock(long boardId, int blockId, [FromBody] TicketAssignmentRequest request, [FromServices] WebSocketManager webSocketManager)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        string? username = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+                           ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                           ?? User.FindFirst(ClaimTypes.Name)?.Value;
+
+        if (string.IsNullOrEmpty(username))
+        {
+            return Unauthorized();
+        }
+
+        User? user = (await _dbHandler.GetAsync<User>(s => s.Username == username)).FirstOrDefault();
+
+        if (user == null)
+        {
+            return Unauthorized();
+        }
+
+        var board = (await _dbHandler.GetAsync<Board>(s => s.Id == boardId && s.UserIds.Contains(user.Id))).FirstOrDefault();
+        if (board == null)
+        {
+            return NotFound("Board not found");
+        }
+
+        var block = (await _dbHandler.GetAsync<Block>(b => b.Id == blockId && b.BoardId == boardId)).FirstOrDefault();
+        if (block == null)
+        {
+            return NotFound("Block not found");
+        }
+
+        var ticket = (await _dbHandler.GetAsync<Ticket>(t => t.Id == request.TicketId && t.BoardId == boardId)).FirstOrDefault();
+        if (ticket == null)
+        {
+            return NotFound("Ticket not found");
+        }
+
+        block.TicketIds.Add(request.TicketId);
+        await _dbHandler.UpdateAsync(block);
+
+        
+        var update = new { message = $"{username}:ticket_assigned", blockId, ticketId = request.TicketId };
+        await webSocketManager.NotifyAsync(boardId, update);
+
+        return Ok();
+    }
+    
     [HttpPost("{boardId}/tickets")]
     public async Task<ActionResult> CreateTicket(long boardId, [FromBody] Ticket ticket, [FromServices] WebSocketManager webSocketManager)
     {

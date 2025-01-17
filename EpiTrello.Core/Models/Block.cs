@@ -9,6 +9,7 @@ public class Block
     public int Status { get; set; }
     public long BoardId { get; set; }
     public string? Description { get; set; }
+    public List<long> TicketIds { get; set; }
     
     [JsonIgnore]
     public Board? Board { get; set; }

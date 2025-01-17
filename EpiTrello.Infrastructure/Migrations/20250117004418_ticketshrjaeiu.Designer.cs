@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using EpiTrello.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace EpiTrello.Infrastructure.Migrations
 {
     [DbContext(typeof(EpiTrelloContext))]
-    partial class EpiTrelloContextModelSnapshot : ModelSnapshot
+    [Migration("20250117004418_ticketshrjaeiu")]
+    partial class ticketshrjaeiu
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
