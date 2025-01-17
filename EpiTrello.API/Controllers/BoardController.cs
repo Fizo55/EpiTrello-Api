@@ -182,14 +182,9 @@ public class BoardController : BaseController
         return Ok(stage);
     }
     
-    [HttpPost("{boardId}/blocks/{blockId}/tickets")]
-    public async Task<IActionResult> AssignTicketToBlock(long boardId, int blockId, [FromBody] TicketAssignmentRequest request, [FromServices] WebSocketManager webSocketManager)
+    [HttpPost("{boardId}/blocks/{blockId}/tickets/{ticketId}")]
+    public async Task<IActionResult> AttachTicketToBlock(long boardId, long blockId, long ticketId)
     {
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(ModelState);
-        }
-
         string? username = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
                            ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
                            ?? User.FindFirst(ClaimTypes.Name)?.Value;
@@ -200,7 +195,6 @@ public class BoardController : BaseController
         }
 
         User? user = (await _dbHandler.GetAsync<User>(s => s.Username == username)).FirstOrDefault();
-
         if (user == null)
         {
             return Unauthorized();
@@ -218,22 +212,20 @@ public class BoardController : BaseController
             return NotFound("Block not found");
         }
 
-        var ticket = (await _dbHandler.GetAsync<Ticket>(t => t.Id == request.TicketId && t.BoardId == boardId)).FirstOrDefault();
+        var ticket = (await _dbHandler.GetAsync<Ticket>(t => t.Id == ticketId && t.BoardId == boardId)).FirstOrDefault();
         if (ticket == null)
         {
             return NotFound("Ticket not found");
         }
-        
+
         block.TicketsId ??= Array.Empty<long>();
+        if (!block.TicketsId.Contains(ticketId))
+        {
+            block.TicketsId = block.TicketsId.Append(ticketId).ToArray();
+            await _dbHandler.UpdateAsync(block);
+        }
 
-        block.TicketsId = block.TicketsId.Append(request.TicketId).ToArray();
-        await _dbHandler.UpdateAsync(block);
-
-        
-        var update = new { message = $"{username}:ticket_assigned", blockId, ticketId = request.TicketId };
-        await webSocketManager.NotifyAsync(boardId, update);
-
-        return Ok();
+        return NoContent();
     }
     
     [HttpPost("{boardId}/tickets")]
