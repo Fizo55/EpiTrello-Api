@@ -82,6 +82,37 @@ public class AuthController : BaseController
         }
     }
     
+    [HttpPut("update-password")]
+    public async Task<IActionResult> UpdatePassword([FromBody] UpdatePasswordRequest request)
+    {
+        string? username = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+                           ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                           ?? User.FindFirst(ClaimTypes.Name)?.Value;
+
+        if (string.IsNullOrEmpty(username))
+        {
+            return Unauthorized();
+        }
+
+        User? user = (await _dbHandler.GetAsync<User>(s => s.Username == username)).FirstOrDefault();
+
+        if (user == null)
+        {
+            return Unauthorized();
+        }
+
+        if (string.IsNullOrEmpty(request.NewPassword) || request.NewPassword.Length < 8)
+        {
+            return BadRequest("Password should be at least 8 characters long.");
+        }
+
+        user.Password = HashPassword(request.NewPassword);
+
+        await _dbHandler.UpdateAsync(user);
+
+        return Ok(new { message = "Password updated successfully" });
+    }
+    
     // POST: /auth/login
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] User user)
