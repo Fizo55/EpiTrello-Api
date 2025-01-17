@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace EpiTrello.Infrastructure.Migrations
 {
     [DbContext(typeof(EpiTrelloContext))]
-    [Migration("20250116235050_tickets")]
-    partial class tickets
+    [Migration("20250117005214_ticketsfix")]
+    partial class ticketsfix
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -42,8 +42,9 @@ namespace EpiTrello.Infrastructure.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
-                    b.Property<long>("TicketId")
-                        .HasColumnType("bigint");
+                    b.Property<long[]>("TicketsId")
+                        .IsRequired()
+                        .HasColumnType("bigint[]");
 
                     b.Property<string>("Title")
                         .HasColumnType("text");

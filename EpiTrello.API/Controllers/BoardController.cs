@@ -223,8 +223,10 @@ public class BoardController : BaseController
         {
             return NotFound("Ticket not found");
         }
+        
+        block.TicketsId ??= Array.Empty<long>();
 
-        block.TicketIds.Add(request.TicketId);
+        block.TicketsId = block.TicketsId.Append(request.TicketId).ToArray();
         await _dbHandler.UpdateAsync(block);
 
         
