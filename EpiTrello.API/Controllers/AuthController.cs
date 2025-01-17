@@ -101,7 +101,7 @@ public class AuthController : BaseController
             return Unauthorized();
         }
 
-        if (string.IsNullOrEmpty(request.NewPassword) || request.NewPassword.Length < 8)
+        if (string.IsNullOrEmpty(request.NewPassword))
         {
             return BadRequest("Password should be at least 8 characters long.");
         }
